@@ -1,10 +1,12 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
-use mongodb::{Client, error::Error, Collection};
+use mongodb::{Client, error::Error, Collection, bson::oid::ObjectId};
 use serde::{Serialize, Deserialize};
 use futures_util::stream::StreamExt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
+    #[serde(rename="_id", skip_serializing_if="Option::is_none")]
+    message_id: Option<ObjectId>,
     pub text: String,
 }
 
@@ -62,7 +64,7 @@ async fn list_messages(ctx: web::Data<AppContext>) -> impl Responder {
 #[post("/create")]
 async fn create_message(ctx: web::Data<AppContext>, req_body: String) -> impl Responder {
     let collection: Collection<Message> = ctx.collection("Messages");
-    let result = collection.insert_one(&Message { text: req_body }, None).await;
+    let result = collection.insert_one(&Message { message_id: None, text: req_body }, None).await;
     match result {
         Ok(_) =>
             HttpResponse::Ok().body("message created"),
